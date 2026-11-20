@@ -1,0 +1,46 @@
+# Publish an AI Game Dev package to the community registry from GitLab CI with Trusted Publishing (OIDC): no
+# publisher token in your CI/CD variables. Setup: https://ai-game.dev/docs/wiki/app/trusted-publishing
+#
+# Include this file (or copy it into your project) and extend the hidden job:
+#
+#   include:
+#     - remote: https://raw.githubusercontent.com/IvanMurzak/gamedev-publish-action/v1/gitlab/publish-package.gitlab-ci.yml
+#   publish-package:
+#     extends: .aigd-publish-package
+#     before_script:
+#       - npm ci --ignore-scripts && npm run build   # whatever builds dist/ (no dependency install scripts: this
+#                                                    # job holds AIGD_ID_TOKEN)
+#     variables:
+#       AIGD_PACKAGE_PATH: "."
+#       AIGD_RELEASE_NOTES: ""         # optional Markdown file; default: the version's section of CHANGELOG.md
+#     rules:
+#       - if: $CI_COMMIT_TAG
+#
+# The registry accepts the job only if the package's owner added a GitLab trusted publisher on ai-game.dev/publisher
+# that matches this project path, the CI config file (default .gitlab-ci.yml) and (when set there) the environment
+# and ref. Only branch and tag pipelines can publish, never a merge request's. Restrict the trusted publisher to an
+# environment or a protected ref: the CI config path alone can be edited by anyone who can push a branch.
+# The ID token must have exactly ONE audience, a plain string: `ai-game.dev` for production (another registry: its
+# host name, and set AIGD_OIDC_AUDIENCE to the same value).
+.aigd-publish-package:
+  image: node:22
+  # GitLab mints this ID token for the job with the registry as its audience; `gamedev pkg publish` trades it for a
+  # 15-minute upload credential of this one package.
+  id_tokens:
+    AIGD_ID_TOKEN:
+      aud: ai-game.dev
+  variables:
+    AIGD_PACKAGE_PATH: "."
+    AIGD_RELEASE_NOTES: ""
+    AIGD_CLI_VERSION: beta   # Trusted Publishing ships in the beta channel first; latest after the next stable release
+  script:
+    - |
+      set -eu
+      # Only an npm version or dist-tag: a spec like npm:other@1 or a URL would run another package with the credential.
+      echo "$AIGD_CLI_VERSION" | grep -Eq '^([0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?|[a-z][a-z0-9-]{0,31})$' || { echo "AIGD_CLI_VERSION must be a version or a dist-tag"; exit 2; }
+      case "$AIGD_PACKAGE_PATH" in -*) echo "AIGD_PACKAGE_PATH must not start with -"; exit 2 ;; esac
+      if [ -n "$AIGD_RELEASE_NOTES" ]; then
+        npx --yes "@baizor/gamedev@${AIGD_CLI_VERSION}" pkg publish "$AIGD_PACKAGE_PATH" --notes "$AIGD_RELEASE_NOTES"
+      else
+        npx --yes "@baizor/gamedev@${AIGD_CLI_VERSION}" pkg publish "$AIGD_PACKAGE_PATH"
+      fi

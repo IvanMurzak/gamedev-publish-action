@@ -1,0 +1,91 @@
+# Publish an AI Game Dev package to the community registry from GitHub Actions with Trusted Publishing (OIDC):
+# no publisher token in your secrets. Setup: https://ai-game.dev/docs/wiki/app/trusted-publishing
+#
+#   permissions:
+#     contents: read
+#     id-token: write          # lets the job request an OIDC token for the registry (audience ai-game.dev)
+#   steps:
+#     - uses: actions/checkout@v4
+#     - run: npm ci --ignore-scripts && npm run build   # whatever builds dist/ (no dependency install scripts:
+#                                                       # this job can mint a registry credential)
+#     - uses: IvanMurzak/gamedev-publish-action@v1
+#       with:
+#         path: .
+#         notes: RELEASE_NOTES.md               # optional; default: the version's section of CHANGELOG.md
+#
+# The registry accepts the run only if the package's owner added a trusted publisher on ai-game.dev/publisher that
+# matches this repository, the workflow file and (when set there) the environment and ref. The workflow is YOUR
+# workflow file that calls this action (e.g. .github/workflows/release.yml: GitHub's top-level workflow_ref), not
+# this action. Only branch and tag runs (refs/heads/*, refs/tags/*) can publish, never a pull request. Set an
+# environment with required reviewers (or a ref) on the trusted publisher: the workflow path alone can be edited by
+# anyone who can push a branch.
+name: Publish AI Game Dev package
+description: Pack, upload and check an AI Game Dev package on the community registry with Trusted Publishing (OIDC).
+author: AI Game Dev
+branding:
+  icon: upload-cloud
+  color: purple
+inputs:
+  path:
+    description: The package folder (the one with aigd-package.json), relative to the workspace.
+    required: false
+    default: "."
+  notes:
+    description: A Markdown file (relative to the workspace) with this version's release notes, at most 20 KB. Empty = the version's section of CHANGELOG.md.
+    required: false
+    default: ""
+  wait:
+    description: "true: wait for the registry's automated checks and fail the step when the version is rejected. false: return after the upload."
+    required: false
+    default: "true"
+  cli-version:
+    description: The @baizor/gamedev version to run, an exact version (recommended) or a dist-tag (Trusted Publishing needs a CLI newer than 0.32.0). Default `beta`: Trusted Publishing ships in the beta channel first; the default moves to `latest` with the next stable release.
+    required: false
+    default: beta
+  audience:
+    description: The OIDC audience. Empty = what the CLI derives (ai-game.dev for production). Set it only for a non-production registry.
+    required: false
+    default: ""
+  node-version:
+    description: The Node.js version that runs the CLI.
+    required: false
+    default: "22"
+outputs:
+  result:
+    description: The CLI's JSON result (id, version, state, integrity, auth, report).
+    value: ${{ steps.publish.outputs.result }}
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      with:
+        node-version: ${{ inputs.node-version }}
+    - id: publish
+      shell: bash
+      env:
+        AIGD_PATH: ${{ inputs.path }}
+        AIGD_NOTES: ${{ inputs.notes }}
+        AIGD_WAIT: ${{ inputs.wait }}
+        AIGD_CLI_VERSION: ${{ inputs.cli-version }}
+        AIGD_OIDC_AUDIENCE: ${{ inputs.audience }}
+      # Inputs reach the script as environment variables, never spliced into it (no injection through an input).
+      run: |
+        set -euo pipefail
+        # Only an npm version or dist-tag: a spec like npm:other@1 or a URL would run another package with the credential.
+        if ! [[ "$AIGD_CLI_VERSION" =~ ^([0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?|[a-z][a-z0-9-]{0,31})$ ]]; then
+          echo "::error::cli-version must be a version (0.33.0) or a dist-tag (latest), not '$AIGD_CLI_VERSION'"; exit 2
+        fi
+        case "$AIGD_PATH" in -*) echo "::error::path must not start with '-'"; exit 2 ;; esac
+        args=(pkg publish "$AIGD_PATH" --json)
+        if [ -n "$AIGD_NOTES" ]; then args+=(--notes "$AIGD_NOTES"); fi
+        if [ "$AIGD_WAIT" != "true" ]; then args+=(--no-wait); fi
+        status=0
+        npx --yes "@baizor/gamedev@${AIGD_CLI_VERSION}" "${args[@]}" > "$RUNNER_TEMP/aigd-publish.json" || status=$?
+        cat "$RUNNER_TEMP/aigd-publish.json"
+        delimiter="AIGD_EOF_$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')"
+        {
+          echo "result<<$delimiter"
+          cat "$RUNNER_TEMP/aigd-publish.json"
+          echo "$delimiter"
+        } >> "$GITHUB_OUTPUT"
+        exit "$status"
