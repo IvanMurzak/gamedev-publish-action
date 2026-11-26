@@ -39,9 +39,9 @@ inputs:
     required: false
     default: "true"
   cli-version:
-    description: The @baizor/gamedev version to run, an exact version (recommended) or a dist-tag (Trusted Publishing needs a CLI newer than 0.32.0). Default `beta`: Trusted Publishing ships in the beta channel first; the default moves to `latest` with the next stable release.
+    description: The @baizor/gamedev version to run, a dist-tag or an exact version (0.32.0 or newer, the first stable CLI with Trusted Publishing). Pin an exact version for builds that never change under you.
     required: false
-    default: beta
+    default: latest
   audience:
     description: The OIDC audience. Empty = what the CLI derives (ai-game.dev for production). Set it only for a non-production registry.
     required: false

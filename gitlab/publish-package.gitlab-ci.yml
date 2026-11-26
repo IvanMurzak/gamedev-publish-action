@@ -32,7 +32,7 @@
   variables:
     AIGD_PACKAGE_PATH: "."
     AIGD_RELEASE_NOTES: ""
-    AIGD_CLI_VERSION: beta   # Trusted Publishing ships in the beta channel first; latest after the next stable release
+    AIGD_CLI_VERSION: latest   # a dist-tag or an exact version (0.32.0 or newer)
   script:
     - |
       set -eu
