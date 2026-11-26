@@ -43,7 +43,7 @@ jobs:
 | `path` | `.` | The package folder (with `aigd-package.json`) |
 | `notes` | empty | A Markdown file with this version's release notes (≤ 20 KB) |
 | `wait` | `true` | Wait for the registry's checks and fail the step on a rejection; `false` returns after the upload |
-| `cli-version` | `beta` | The `@baizor/gamedev` version: an exact version (recommended) or a dist-tag. Trusted Publishing needs a CLI newer than 0.32.0, in the `beta` channel until the next stable release |
+| `cli-version` | `latest` | The `@baizor/gamedev` version: a dist-tag or an exact version. Trusted Publishing needs CLI 0.32.0 or newer (every stable release since 0.32.0); pin an exact version for builds that never change |
 | `audience` | empty | The OIDC audience; set it only for a non-production registry |
 | `node-version` | `22` | The Node.js version that runs the CLI |
 
@@ -64,6 +64,7 @@ publish-package:
   variables:
     AIGD_PACKAGE_PATH: "."
     AIGD_RELEASE_NOTES: ""             # optional Markdown file
+    AIGD_CLI_VERSION: latest           # default; or an exact version, 0.32.0 or newer
   environment: registry
   rules:
     - if: $CI_COMMIT_TAG
