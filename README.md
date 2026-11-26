@@ -11,9 +11,9 @@ Full guide: <https://ai-game.dev/docs/wiki/app/trusted-publishing>
 On [ai-game.dev/publisher](https://ai-game.dev/publisher), open your package → **Trusted publishing** and add your
 repository, the workflow file (GitHub) or CI config path (GitLab), and an **environment** (with required reviewers) or a
 protected **ref**. The workflow path alone can be edited by anyone who can push a branch. The repository must be
-public: the registry looks it up to pin its ids and refuses one it cannot see. The whole first publish, in order:
-<https://ai-game.dev/docs/wiki/app/trusted-publishing#checklist>. A package that was never
-uploaded can be set up there too (**Set up a new package**).
+public: the registry looks it up to pin its ids and refuses one it cannot see. A package that was never uploaded can
+be set up in the panel too (**Set up a new package**). The whole first publish, in order:
+<https://ai-game.dev/docs/wiki/app/trusted-publishing#checklist>.
 
 ## 2. GitHub Actions
 
@@ -45,7 +45,7 @@ jobs:
 | `path` | `.` | The package folder (with `aigd-package.json`) |
 | `notes` | empty | A Markdown file with this version's release notes (≤ 20 KB) |
 | `wait` | `true` | Wait for the registry's checks and fail the step on a rejection; `false` returns after the upload |
-| `cli-version` | `latest` | The `@baizor/gamedev` version: a dist-tag or an exact version (0.32.0 or newer, the first CLI with Trusted Publishing); pin an exact version for builds that never change |
+| `cli-version` | `latest` | The `@baizor/gamedev` version: a dist-tag or an exact version (0.32.0 or newer, the first stable CLI with Trusted Publishing); pin an exact version for builds that never change |
 | `audience` | empty | The OIDC audience; set it only for a non-production registry |
 | `node-version` | `22` | The Node.js version that runs the CLI |
 
