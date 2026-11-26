@@ -39,7 +39,7 @@ inputs:
     required: false
     default: "true"
   cli-version:
-    description: The @baizor/gamedev version to run, a dist-tag or an exact version. Trusted Publishing needs CLI 0.32.0 or newer, which every stable release since 0.32.0 is; pin an exact version (e.g. 0.32.6) for builds that never change under you.
+    description: The @baizor/gamedev version to run, a dist-tag or an exact version (0.32.0 or newer, the first CLI with Trusted Publishing). Pin an exact version for builds that never change under you.
     required: false
     default: latest
   audience:
